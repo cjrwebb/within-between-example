@@ -113,6 +113,8 @@ summary(model_wb)
 model_wb_full <- lmer(data = d, 
                  formula = at_31_cla_rate10000 ~ 
                    at31_cpp_rate10000_grp_mean + at31_cin_ep_rate_10000_grp_mean +
+                   at31_cpp_rate10000_gmc + at31_cin_ep_rate_10000_gmc +
+                   at31_cpp_rate10000_gmc_lag + at31_cin_ep_rate_10000_gmc_lag +
                    I(imd19_idaci*100) +
                    gspend_noncla_nonsg_pc_grp_mean + gspend_noncla_nonsg_pc_gmc + gspend_noncla_nonsg_pc_gmc_lag +
                    (1 | la_name)
@@ -123,7 +125,6 @@ summary(model_wb_full)
 
 # Use delta method to calculate two-year effect
 car::deltaMethod(model_wb_full, "gspend_noncla_nonsg_pc_gmc+gspend_noncla_nonsg_pc_gmc_lag", rhs = 0)
-
 
 
 
