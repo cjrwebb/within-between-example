@@ -34,15 +34,14 @@ d <- d %>%
   ungroup()
 
 d %>%
-  select(la_name, time_period, gspend_noncla_nonsg_pc, gspend_noncla_nonsg_pc_unc_lag)
-
+  select(la_name, time_period, gspend_noncla_nonsg_pc, gspend_noncla_nonsg_pc_unc_lag) %>% head(20)
 
 
 # Example models ----------------------------------------------------------
 
 # Example model without LA intercepts
 model_lm <- lm(data = d, 
-                 formula = at_31_cla_rate10000 ~ gspend_noncla_nonsg_pc + gspend_noncla_nonsg_pc_unc_lag
+              formula = at_31_cla_rate10000 ~ gspend_noncla_nonsg_pc + gspend_noncla_nonsg_pc_unc_lag
 )
 
 summary(model_lm)
@@ -59,7 +58,9 @@ model_un <- lmer(data = d,
      )
 
 summary(model_un)
+ranef(model_un)
 
+hist(ranef(model_un)$la_name[,1])
 
 # Within-between pre-processing -------------------------------------------
 
@@ -92,6 +93,13 @@ d %>%
 
 # Within-between model with English data ----------------------------------
 
+
+model_null <- lmer(data = d, 
+                 formula = at_31_cla_rate10000 ~ 1 + (1 | la_name)
+)
+
+summary(model_null)
+
 # Example with within-between
 model_wb <- lmer(data = d, 
                formula = at_31_cla_rate10000 ~ 
@@ -100,6 +108,21 @@ model_wb <- lmer(data = d,
 )
 
 summary(model_wb)
+
+# Identical model from research project
+model_wb_full <- lmer(data = d, 
+                 formula = at_31_cla_rate10000 ~ 
+                   at31_cpp_rate10000_grp_mean + at31_cin_ep_rate_10000_grp_mean +
+                   I(imd19_idaci*100) +
+                   gspend_noncla_nonsg_pc_grp_mean + gspend_noncla_nonsg_pc_gmc + gspend_noncla_nonsg_pc_gmc_lag +
+                   (1 | la_name)
+)
+
+summary(model_wb_full)
+
+
+# Use delta method to calculate two-year effect
+car::deltaMethod(model_wb_full, "gspend_noncla_nonsg_pc_gmc+gspend_noncla_nonsg_pc_gmc_lag", rhs = 0)
 
 
 
@@ -349,6 +372,8 @@ muni_sf <- read_sf("data/finnish_data/TietoaKuntajaosta_2020_1000k/SuomenKuntaja
 anti_join(muni_sf, spatial_inequalities_nise, by = c("NAMEFIN" = "rowname"))
 anti_join(spatial_inequalities_nise, muni_sf, by = c("rowname" = "NAMEFIN"))
 anti_join(muni_sf, spatial_inequalities_nise, by = c("NATCODE" = "m_code"))
+
+muni_sf <- left_join(muni_sf, spatial_inequalities_nise, by = c("NAMEFIN" = "rowname"))
 
 muni_sf %>%
   ggplot() +
