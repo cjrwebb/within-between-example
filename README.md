@@ -45,6 +45,7 @@ When you load up the code.R script, Rstudio should prompt you to install any pac
 * install.packages("car")
 * install.packages("leaflet")
 * install.packages("janitor")
+* install.packages("sf")
   
   
 <br><br><br>
