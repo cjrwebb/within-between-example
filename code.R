@@ -1,6 +1,7 @@
 # load libraries
 library(tidyverse)
 library(lme4)
+library(sf)
 
 # Read in data
 d <- read_csv("data/merged_data.csv")
@@ -45,8 +46,6 @@ model_lm <- lm(data = d,
 )
 
 summary(model_lm)
-
-plot(model_lm)
 
 
 # Example model with LA random intercepts within-between
@@ -126,6 +125,105 @@ summary(model_wb_full)
 
 # Use delta method to calculate two-year effect
 car::deltaMethod(model_wb_full, "gspend_noncla_nonsg_pc_gmc+gspend_noncla_nonsg_pc_gmc_lag", rhs = 0)
+
+
+
+# Adding random effects ---------------------------------------------------
+
+#' One benefit of within-between models is that they are easily extendible 
+#' to include random effects at the local authority level.
+
+model_wb_full_re <- lmer(data = d, 
+                      formula = at_31_cla_rate10000 ~ 
+                        at31_cpp_rate10000_grp_mean + at31_cin_ep_rate_10000_grp_mean +
+                        at31_cpp_rate10000_gmc + at31_cin_ep_rate_10000_gmc +
+                        at31_cpp_rate10000_gmc_lag + at31_cin_ep_rate_10000_gmc_lag +
+                        gspend_saf_pc_grp_mean + gspend_saf_pc_gmc + gspend_saf_pc_gmc_lag +
+                        I(imd19_idaci*100) +
+                        gspend_noncla_nonsg_pc_grp_mean + gspend_noncla_nonsg_pc_gmc + gspend_noncla_nonsg_pc_gmc_lag +
+                        (1 + gspend_noncla_nonsg_pc_gmc + gspend_noncla_nonsg_pc_gmc_lag | la_name)
+)
+
+summary(model_wb_full_re)
+
+car::deltaMethod(model_wb_full_re, "gspend_noncla_nonsg_pc_gmc+gspend_noncla_nonsg_pc_gmc_lag", rhs = 0)
+
+
+# Random local authority effects
+random_la_effs <- as_tibble(ranef(model_wb_full_re))
+
+# Some tidying to have a random effect point estimate and 
+# random effect SD for each LA
+random_la_effs <- random_la_effs %>%
+  pivot_wider(values_from = c(condval, condsd), names_from = term) %>%
+  janitor::clean_names()
+
+# Combine the lagged and same time point values into a single mean
+# and standard error
+random_la_effs <- random_la_effs %>%
+  mutate(
+    raneff_spend_2year_m = condval_gspend_noncla_nonsg_pc_gmc + condsd_gspend_noncla_nonsg_pc_gmc_lag,
+    raneff_spend_2year_sd = sqrt(condsd_gspend_noncla_nonsg_pc_gmc^2 + condsd_gspend_noncla_nonsg_pc_gmc_lag^2)
+  )
+
+
+# select only the combined effects
+random_la_effs <- random_la_effs %>%
+  select(grp, raneff_spend_2year_m, raneff_spend_2year_sd)
+
+random_la_effs
+
+# Add the constant effect from the model
+random_la_effs <- random_la_effs %>%
+  mutate(
+    raneff_spend_2year_m = raneff_spend_2year_m + -3.76078
+  ) 
+
+random_la_effs
+
+# Calculate 95% confidence intervals for random effects
+random_la_effs <- random_la_effs %>%
+  mutate(
+    ub = raneff_spend_2year_m + 1.96*raneff_spend_2year_sd,
+    lb = raneff_spend_2year_m - 1.96*raneff_spend_2year_sd
+  ) 
+
+random_la_effs %>% arrange(raneff_spend_2year_m)
+
+
+# Plotting random effects:
+# Caterpillar plot: Rank x Value, makes it easy to see whether LAs are significantly
+# different to one another
+
+ggplot(random_la_effs) +
+  geom_vline(xintercept = 0) +
+  geom_segment(aes(x = lb, xend = ub, y = rank(raneff_spend_2year_m), yend = rank(raneff_spend_2year_m))) +
+  geom_point(aes(x = raneff_spend_2year_m, y = rank(raneff_spend_2year_m))) 
+
+# Plotting on a map (downside: no uncertainty)
+st_layers("data/LocalAuthorities-uppertier-2023.gpkg")
+la_polygons <- st_read("data/LocalAuthorities-uppertier-2023.gpkg", layer = "LocalAuthorities-uppertier 2023 version — 7 UTLA-2023")
+map_bg <- st_read("data/LocalAuthorities-uppertier-2023.gpkg", layer = "LocalAuthorities-uppertier 2023 version — 8 Background")
+
+# join LA random effects to map data
+# Create lookup for codes
+code_lookup <- d %>% group_by(new_la_code, la_name) %>% summarise()
+code_lookup
+# join
+random_la_effs <- left_join(random_la_effs, code_lookup, by = c(grp = 'la_name'))
+# Join random effects to map data using code; map must be on left hand side
+la_polygons <- left_join(la_polygons, random_la_effs, by = c("cua.code" = "new_la_code"))
+
+la_polygons
+
+# Create a map filled with estimated effect
+ggplot() +
+  geom_sf(data = map_bg) +
+  geom_sf(data = la_polygons, aes(fill = raneff_spend_2year_m)) +
+  scale_fill_gradient2(low = "#006353", high = "#FC9C19")
+
+# Note: missings values here are mismatches between LA codes which I'm not going
+# to fix to keep the amount of code down.
 
 
 
