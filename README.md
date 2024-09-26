@@ -44,6 +44,7 @@ When you load up the code.R script, Rstudio should prompt you to install any pac
 * install.packages("lme4")
 * install.packages("car")
 * install.packages("leaflet")
+* install.packages("janitor")
   
   
 <br><br><br>
