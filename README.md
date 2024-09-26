@@ -2,7 +2,7 @@
 
 #### Dr. Calum J. R. Webb, Sheffield Methods Institute, the University of Sheffield
 
-The training is designed to be 'hands-on' to ensure that you are able to apply the statistical techniques and quantitative methods that are taught in a real research context.
+The training is designed to be 'hands-on' to ensure that you are able to apply the statistical techniques and quantitative methods that are taught in a real research context. The training will be delivered in `R`, but many of the principles should be applicable to any software capable of performing data manipulation and estimating multilevel models. If you don't know what the `R` code is doing, try not to get caught up in worrying about this too much. Instead, it's better to check in with whether you understand what steps are being done in terms of making transformations to the data (e.g. group mean centering) and what models are being run/how they are being interpreted than trying to ensure you know what all of the code is doing, especially if you're not an `R` user.  
 
 If you are new to `R` and `Rstudio`, you will first need to install and configure the statistical programming language and the GUI on your device. 
 
@@ -38,7 +38,7 @@ This repository contains all of the data and code we will be using in the exerci
 
 We will make use of several libraries on the short course that should be installed **prior to the start of the training**. 
 
-When you load up the code.R script, Rstudio should prompt you to install any packages that it detects are used but which are not installed on your system. In short, you will need the following packages:
+When you load up the code.R script, Rstudio should prompt you to install any packages that it detects are used but which are not installed on your system. In short, you will need the following packages, which can be installed by running the console command below in the "Console" pane in the bottom left of the window:
 
 * install.packages("tidyverse")
 * install.packages("lme4")
@@ -47,5 +47,6 @@ When you load up the code.R script, Rstudio should prompt you to install any pac
 * install.packages("janitor")
 * install.packages("sf")
   
+Here is a short guide on installing `R` packages if you're not sure: [https://r-coder.com/install-r-packages/](https://r-coder.com/install-r-packages/)
   
 <br><br><br>
